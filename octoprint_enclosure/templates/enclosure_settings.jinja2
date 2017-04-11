@@ -208,7 +208,7 @@
       <label class="radio">
         <!-- <input type="radio" value="filament"  data-bind="checked: eventType, click: $parent.eventTypeUI($index(),'filament'),
         attr: {name: 'eventType_' + $index() }"> {{ _('Filament Sensor') }} -->
-        <input type="radio" value="filament"  data-bind="checked: eventType, attr: {name: 'eventType_' + $index() }"> {{ _('Filament Sensor') }}
+        <input type="radio" value="printer"  data-bind="checked: eventType, attr: {name: 'eventType_' + $index() }"> {{ _('Printer') }}
       </label>
     </div>
     <div class="controls">
@@ -219,7 +219,7 @@
       </label>
     </div>
   </div>
-  <!-- ko if: ($data.eventType() == "filament" || $data.eventType() == "gpio")  -->
+  <!-- ko if: ($data.eventType() == "printer" || $data.eventType() == "gpio")  -->
     <div data-bind="attr: {id: 'input_io_' + $index() }">
       <div class="control-group">
         <label class="control-label" for="settings-enclosure-io1">{{ _('IO Number') }}</label>
@@ -306,9 +306,7 @@
 </div>
 <!-- /ko -->
 
-
-<!-- ko if: ($data.eventType() == "filament")  -->
-
+<!-- ko if: ($data.eventType() == "printer")  -->
 <div class="control-group" data-bind="attr: {id: 'filament_controlled_' + $index() }">
   <div class="control-group">
     <label class="control-label">Event Trigger</label>
@@ -321,10 +319,18 @@
     </div>
   </div>
 </div>
+<div class="control-group">
+  <label class="control-label">{{ _('Printer Action') }}</label>
+  <div class="controls">
+    <select data-bind="value: printerAction">
+      <option value="filament">Filament Change</option>
+      <option value="resume">Printer Resume</option>
+      <option value="pause">Pritner Pause</option>
+    </select>
+    <span class="help-inline"> You can use filament change on your filament detectors and add buttons to resume and pause the print job.</span>
+  </div>
+</div>
 <!-- /ko -->
-
-
-
 
 <!-- /ko -->
 <div class="control-group">
