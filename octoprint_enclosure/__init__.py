@@ -58,6 +58,7 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
         self.rpi_inputs = self._settings.get(["rpi_inputs"])
         self.startTimer()
         self.startGPIO()
+        self.clearGPIO()
         self.configureGPIO()
 
     #~~ Blueprintplugin mixin
@@ -204,10 +205,14 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
         for control in self.temperature_control:
             GPIO.cleanup(self.toInt(control['gpioPin']))
         for rpi_output in self.rpi_outputs:
-            self._logger.info("Clening channel %s",self.toInt(rpi_output['gpioPin']))
             GPIO.cleanup(self.toInt(rpi_output['gpioPin']))
         for rpi_input in self.rpi_inputs:
+            try:
+                GPIO.remove_event_detect(self.toInt(rpi_input['gpioPin']))
+            except:
+                pass
             GPIO.cleanup(self.toInt(rpi_input['gpioPin']))
+
 
     def configureGPIO(self):
         for control in self.temperature_control:
@@ -216,7 +221,7 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
             GPIO.setup(self.toInt(rpi_output['gpioPin']), GPIO.OUT, initial=GPIO.HIGH if rpi_output['activeLow'] else GPIO.LOW)
         for rpi_input in self.rpi_inputs:
             GPIO.setup(self.toInt(rpi_input['gpioPin']), GPIO.IN, pull_up_down=GPIO.PUD_UP if rpi_input['inputPull'] == 'inputPullUp' else GPIO.PUD_DOWN)
-            if rpi_input['eventType'] == 'gpio':
+            if rpi_input['eventType'] == 'gpio' and self.toInt(rpi_input['gpioPin']) != 0:
                 edge =  GPIO.RISING if rpi_input['edge'] == 'hise' else  GPIO.FALLING
                 GPIO.add_event_detect(self.toInt(rpi_input['gpioPin']), edge, callback= self.handleGPIOControl, bouncetime=200)
 
@@ -235,7 +240,7 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
 
     def startFilamentDetection(self):
         for rpi_input in self.rpi_inputs:
-            if rpi_input['eventType'] == 'filament':
+            if rpi_input['eventType'] == 'filament' and self.toInt(rpi_input['gpioPin']) != 0:
                 edge =  GPIO.RISING if rpi_input['edge'] == 'hise' else GPIO.FALLING
                 if GPIO.input(self.toInt(rpi_input['gpioPin'])) == (edge == GPIO.RISING):
                     self._printer.toggle_pause_print()
