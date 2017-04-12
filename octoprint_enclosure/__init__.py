@@ -271,13 +271,17 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
             if channel == self.toInt(rpi_input['gpioPin']) and rpi_input['eventType']=='printer' and \
             ((rpi_input['edge']=='fall') ^ GPIO.input(self.toInt(rpi_input['gpioPin']))):
                 if rpi_input['printerAction'] == 'resume':
+                    self._logger.info("Printer action resume.")
                     self._printer.resume_print()
                 elif rpi_input['printerAction'] == 'pause':
+                    self._logger.info("Printer action pause.")
                     self._printer.pause_print()
 
     def writeGPIO(self,gpio,value):
         try:
             GPIO.output(gpio, value)
+            if self._settings.get(["debug"]) == True:
+                self._logger.info("Writing on gpio: %s value %s", gpio,value)
             self.updateOutputUI()
         except:
             self._logger.info("Error while writing on GPIO %s", gpio)
