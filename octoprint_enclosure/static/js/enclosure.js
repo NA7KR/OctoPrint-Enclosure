@@ -63,7 +63,8 @@ $(function() {
         };
 
         self.enableBtn = ko.computed(function() {
-            return self.connection.loginState.isUser() && self.printerStateViewModel.isOperational();
+            // return self.connection.loginState.isUser() && self.printerStateViewModel.isOperational();
+            return self.connection.loginState.isUser();
         });
 
         self.onBeforeBinding = function () {
@@ -109,7 +110,9 @@ $(function() {
         };
 
         self.addRpiOutput = function(){
-          self.global_settings.settings.plugins.enclosure.rpi_outputs.push({label: "New Ouput", gpioPin: 0,activeLow: true,
+          self.global_settings.settings.plugins.enclosure.rpi_outputs.push({label: ko.observable("Ouput "+
+            (self.global_settings.settings.plugins.enclosure.rpi_outputs().length+1)) ,
+            gpioPin: 0,activeLow: true,
             autoStartup:false, startupTimeDelay:0, autoShutdown:false,shutdownTimeDelay:0,active:false});
         };
 
@@ -118,8 +121,10 @@ $(function() {
         };
 
         self.addRpiInput = function(){
-          self.global_settings.settings.plugins.enclosure.rpi_inputs.push({label: "New Input", gpioPin: 0,inputPull: "inputPullUp",
-          eventType:ko.observable("temperature"),setTemp:100,controlledIO:ko.observable(0),setControlledIO:"low",edge:"fall"});
+          self.global_settings.settings.plugins.enclosure.rpi_inputs.push({label:ko.observable( "Input "+
+          (self.global_settings.settings.plugins.enclosure.rpi_inputs().length+1)), gpioPin: 0,inputPull: "inputPullUp",
+          eventType:ko.observable("temperature"),setTemp:100,controlledIO:ko.observable(0),setControlledIO:"low",
+          edge:"fall",printerAction:"filament"});
         };
 
         self.removeRpiInput = function(definition) {
@@ -194,12 +199,12 @@ $(function() {
           if($('#enableTemperatureReading').is(':checked')){
             $('#enableHeater').prop('disabled', false);
             $('#temperature_reading_content').show("blind");
-            $('#temperature_control_content').show("blind");
+            // $('#temperature_control_content').show("blind");
           }else{
             $('#enableHeater').prop('disabled', true);
             $('#enableHeater').prop('checked', false);
             $('#temperature_reading_content').hide("blind");
-            $('#temperature_control_content').hide("blind");
+            // $('#temperature_control_content').hide("blind");
           }
 
           if($('#enableHeater').is(':checked')){
