@@ -127,13 +127,14 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
 
 
     def handleTemperatureEvents(self):
+        if self.toFloat(rpi_input['setTemp']) == 0
+            return
         for rpi_input in self.rpi_inputs:
-            if rpi_input['eventType']=='temperature' and self.toFloat(rpi_input['setTemp']) < self.toFloat(self.enclosureCurrentTemperature):
+            if rpi_input['eventType']=='temperature' and (self.toFloat(rpi_input['setTemp']) < self.toFloat(self.enclosureCurrentTemperature)):
                 for rpi_output in self.rpi_outputs:
-                    if 'controlledIO' in rpi_input:
-                        if self.toInt(rpi_input['controlledIO']) == self.toInt(rpi_output['gpioPin']):
-                            val = GPIO.LOW if rpi_output['activeLow'] else GPIO.HIGH
-                            self.writeGPIO(self.toInt(rpi_output['gpioPin']), val)
+                    if self.toInt(rpi_input['controlledIO']) == self.toInt(rpi_output['gpioPin']):
+                        val = GPIO.LOW if rpi_output['activeLow'] else GPIO.HIGH
+                        self.writeGPIO(self.toInt(rpi_output['gpioPin']), val)
 
     def readDhtTemp(self,sensor,pin):
         try:
@@ -170,6 +171,8 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
         return lines
 
     def handleTemperatureControl(self):
+        if self.enclosureSetTemperature == 0
+            return
         for control in self.temperature_control:
             if control['isEnabled'] == True:
                 if control['controlType'] == 'heater':
