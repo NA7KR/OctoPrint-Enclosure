@@ -275,7 +275,7 @@
               <label class="control-label"> Controlled IO</label>
               <div class="controls">
                 <select data-bind="options: $root.global_settings.settings.plugins.enclosure.rpi_outputs, optionsText: 'label',
-                optionsValue: 'gpioPin', value: $data.controlledIO ? $data.controlledIO : ''">
+                optionsValue: 'gpioPin', value: $data.controlledIO">
               </select>
               <span class="help-inline">When the event happen, you want control which IO?</span>
             </div>
@@ -305,7 +305,7 @@
             <label class="control-label"> Controlled IO</label>
             <div class="controls">
               <select data-bind="options: $root.global_settings.settings.plugins.enclosure.rpi_outputs, optionsText: 'label',
-              optionsValue: 'gpioPin', value: $data.controlledIO ? $data.controlledIO : ''">
+              optionsValue: 'gpioPin', value: $data.controlledIO">
             </select>
             <span class="help-inline">When the event happen, you want control which IO?</span>
           </div>
@@ -342,7 +342,7 @@
             <select data-bind="value: printerAction">
               <option value="filament">Filament Change</option>
               <option value="resume">Printer Resume</option>
-              <option value="pause">Pritner Pause</option>
+              <option value="pause">Printer Pause</option>
             </select>
             <span class="help-inline"> You can use filament change on your filament detectors and add buttons to resume and pause the print job.</span>
           </div>
