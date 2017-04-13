@@ -254,7 +254,6 @@ $(function() {
             $('#autoStartupField_'+idNumber).hide("blind");
           }
         };
-
         self.fixAutoShutdownUI = function(idNumber){
           if($('#autoShutdown_'+idNumber).is(':checked')){
             $('#autoShutdownField_'+idNumber).show("blind");
