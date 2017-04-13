@@ -271,6 +271,7 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
             pass
 
     def startFilamentDetection(self):
+        self.stopFilamentDetection()
         try:
             for rpi_input in self.rpi_inputs:
                 if rpi_input['eventType'] == 'printer' and rpi_input['printerAction'] == 'filament' and self.toInt(rpi_input['gpioPin']) != 0:
@@ -360,33 +361,26 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
             self.startFilamentDetection()
 
         if event == Events.PRINT_STARTED:
-
             map(scheduler.cancel, scheduler.queue)
-
             self.startFilamentDetection()
-
             for rpi_output in self.rpi_outputs:
                 if rpi_output['autoStartup']:
                     value = False if rpi_output['activeLow'] else True
-                    scheduler.enter(rpi_output['startupTimeDelay'], 1, self.writeGPIO, (self.toInt(rpi_output['gpioPin']),value,))
+                    scheduler.enter(self.toFloat(rpi_output['startupTimeDelay']), 1, self.writeGPIO, (self.toInt(rpi_output['gpioPin']),value,))
             scheduler.run()
-
             for control in self.temperature_control:
                 if control['autoStartup'] == True:
                     self.enclosureSetTemperature = self.toInt(control['defaultTemp'])
                     self._plugin_manager.send_plugin_message(self._identifier, dict(enclosureSetTemp=self.enclosureSetTemperature))
 
-
         elif event in (Events.PRINT_DONE, Events.PRINT_FAILED, Events.PRINT_CANCELLED):
             self.stopFilamentDetection()
-
             self.enclosureSetTemperature = 0
             self._plugin_manager.send_plugin_message(self._identifier, dict(enclosureSetTemp=self.enclosureSetTemperature))
-
             for rpi_output in self.rpi_outputs:
                 if rpi_output['autoShutdown']:
                     value = True if rpi_output['activeLow'] else False
-                    scheduler.enter(rpi_output['shutdownTimeDelay'], 1, self.writeGPIO, (self.toInt(rpi_output['gpioPin']),value,))
+                    scheduler.enter(self.toFloat(rpi_output['shutdownTimeDelay']), 1, self.writeGPIO, (self.toInt(rpi_output['gpioPin']),value,))
             scheduler.run()
 
     #~~ SettingsPlugin mixin
