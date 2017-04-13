@@ -402,12 +402,10 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
 
     def get_settings_defaults(self):
         return dict(
-            temperature_reading = [{ 'isEnabled': True, 'gpioPin': 4, 'useFahrenheit':False, 'sensorType':''}],
+            temperature_reading = [{ 'isEnabled': False, 'gpioPin': 4, 'useFahrenheit':False, 'sensorType':''}],
             temperature_control = [{ 'isEnabled': False, 'controlType':'heater', 'gpioPin': 17, 'activeLow': True, 'autoStartup': False,'defaultTemp':0}],
-            rpi_outputs = [{'label':'My Label', 'gpioPin': 0,'activeLow': True,'autoStartup':False,'startupTimeDelay':0,
-                'autoShutdown':False,'shutdownTimeDelay':0,'active':False}],
-            rpi_inputs = [{'label':'My Label', 'gpioPin': 0,'inputPull': 'inputPullUp', 'eventType':'temperature', 'setTemp':100,
-                'controlledIO':0, 'setControlledIO':'low', 'edge':'fall'}],
+            rpi_outputs = [],
+            rpi_inputs = [],
             filamentSensorGcode =  "G91  ;Set Relative Mode \n" +
                                     "G1 E-5.000000 F500 ;Retract 5mm\n" +
                                     "G1 Z15 F300         ;move Z up 15mm\n" +
