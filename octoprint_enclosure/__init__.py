@@ -101,33 +101,35 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
 
     #~~ Plugin Internal methods
     def checkEnclosureTemp(self):
-        # self.temperature_reading = self._settings.get(["temperature_reading"])
-        # if self._settings.get(["debug"]) == True:
-        #     self._logger.info("Checking enclosure temperature")
-        for temp_reader in self.temperature_reading:
-            if temp_reader['isEnabled']:
-                if temp_reader['sensorType'] in ["11", "22", "2303"]:
-                    self._logger.info("sensorType dht")
-                    self.enclosureCurrentTemperature,enclosureHumidity=self.enclosureCurrentHumidity = self.readDhtTemp(temp_reader['sensorType'],temp_reader['gpioPin'])
-                elif temp_reader['sensorType'] == "18b20":
-                    self.enclosureCurrentTemperature = self.read18b20Temp()
-                else:
-                    self._logger.info("sensorType no match")
-                    self.enclosureCurrentTemperature = 0
+        try:
+            for temp_reader in self.temperature_reading:
+                if temp_reader['isEnabled']:
+                    if temp_reader['sensorType'] in ["11", "22", "2303"]:
+                        self._logger.info("sensorType dht")
+                        self.enclosureCurrentTemperature,enclosureHumidity=self.enclosureCurrentHumidity = self.readDhtTemp(temp_reader['sensorType'],temp_reader['gpioPin'])
+                    elif temp_reader['sensorType'] == "18b20":
+                        self.enclosureCurrentTemperature = self.read18b20Temp()
+                    else:
+                        self._logger.info("sensorType no match")
+                        self.enclosureCurrentTemperature = 0
 
-                if temp_reader['useFahrenheit']:
-                    self.enclosureCurrentTemperature  = self.enclosureCurrentTemperature*1.8 + 32
+                    if temp_reader['useFahrenheit']:
+                        self.enclosureCurrentTemperature  = self.enclosureCurrentTemperature*1.8 + 32
 
-                if self._settings.get(["debug"]) == True:
-                    self._logger.info("Temperature read was: %s", self.enclosureCurrentTemperature)
+                    if self._settings.get(["debug"]) == True:
+                        self._logger.info("Temperature read was: %s", self.enclosureCurrentTemperature)
 
-                self._plugin_manager.send_plugin_message(self._identifier, dict(enclosuretemp=self.enclosureCurrentTemperature,enclosureHumidity=self.enclosureCurrentHumidity))
-                self.handleTemperatureControl()
-                self.handleTemperatureEvents()
-
+                    self._plugin_manager.send_plugin_message(self._identifier, dict(enclosuretemp=self.enclosureCurrentTemperature,enclosureHumidity=self.enclosureCurrentHumidity))
+                    self.handleTemperatureControl()
+                    self.handleTemperatureEvents()
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            self._logger.warn(message)
+            pass
 
     def handleTemperatureEvents(self):
-        if self.toFloat(rpi_input['setTemp']) == 0
+        if self.toFloat(rpi_input['setTemp']) == 0:
             return
         for rpi_input in self.rpi_inputs:
             if rpi_input['eventType']=='temperature' and (self.toFloat(rpi_input['setTemp']) < self.toFloat(self.enclosureCurrentTemperature)):
@@ -171,7 +173,7 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
         return lines
 
     def handleTemperatureControl(self):
-        if self.enclosureSetTemperature == 0
+        if self.enclosureSetTemperature == 0:
             return
         for control in self.temperature_control:
             if control['isEnabled'] == True:
@@ -191,94 +193,141 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
                     self.previousTempControlStatus = self.currentTempControlStatus
 
     def startGPIO(self):
-        currentMode = GPIO.getmode()
-        setMode = GPIO.BOARD if self._settings.get(["useBoardPinNumber"]) else GPIO.BCM
-        if currentMode== None:
-            currentMode = setMode
-        if currentMode != setMode:
-            GPIO.setmode(currentMode)
-            tempstr = "BOARD" if currentMode == GPIO.BOARD else "BCM"
-            self._settings.set(["useBoardPinNumber"],True if currentMode == GPIO.BOARD else False)
-            self._plugin_manager.send_plugin_message(self._identifier,dict(isMsg=True,msg="GPIO mode was configured before, GPIO mode will be forced to use: " + tempstr + " as pin numbers. Please update GPIO accordingly!"))
-        else:
-            GPIO.setmode(setMode)
-        GPIO.setwarnings(False)
+        try:
+            currentMode = GPIO.getmode()
+            setMode = GPIO.BOARD if self._settings.get(["useBoardPinNumber"]) else GPIO.BCM
+            if currentMode== None:
+                currentMode = setMode
+            if currentMode != setMode:
+                GPIO.setmode(currentMode)
+                tempstr = "BOARD" if currentMode == GPIO.BOARD else "BCM"
+                self._settings.set(["useBoardPinNumber"],True if currentMode == GPIO.BOARD else False)
+                self._plugin_manager.send_plugin_message(self._identifier,dict(isMsg=True,msg="GPIO mode was configured before, GPIO mode will be forced to use: " + tempstr + " as pin numbers. Please update GPIO accordingly!"))
+            else:
+                GPIO.setmode(setMode)
+            GPIO.setwarnings(False)
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            self._logger.warn(message)
+            pass
 
     def clearGPIO(self):
-        for control in self.temperature_control:
-            GPIO.cleanup(self.toInt(control['gpioPin']))
-        for rpi_output in self.rpi_outputs:
-            GPIO.cleanup(self.toInt(rpi_output['gpioPin']))
-        for rpi_input in self.rpi_inputs:
-            try:
-                GPIO.remove_event_detect(self.toInt(rpi_input['gpioPin']))
-            except:
-                pass
-            GPIO.cleanup(self.toInt(rpi_input['gpioPin']))
-
+        try:
+            for control in self.temperature_control:
+                GPIO.cleanup(self.toInt(control['gpioPin']))
+            for rpi_output in self.rpi_outputs:
+                GPIO.cleanup(self.toInt(rpi_output['gpioPin']))
+            for rpi_input in self.rpi_inputs:
+                try:
+                    GPIO.remove_event_detect(self.toInt(rpi_input['gpioPin']))
+                except:
+                    pass
+                GPIO.cleanup(self.toInt(rpi_input['gpioPin']))
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            self._logger.warn(message)
+            pass
 
     def configureGPIO(self):
-        for control in self.temperature_control:
-             GPIO.setup(self.toInt(control['gpioPin']), GPIO.OUT, initial=GPIO.HIGH if control['activeLow'] else GPIO.LOW)
-        for rpi_output in self.rpi_outputs:
-            GPIO.setup(self.toInt(rpi_output['gpioPin']), GPIO.OUT, initial=GPIO.HIGH if rpi_output['activeLow'] else GPIO.LOW)
-        for rpi_input in self.rpi_inputs:
-            GPIO.setup(self.toInt(rpi_input['gpioPin']), GPIO.IN, pull_up_down=GPIO.PUD_UP if rpi_input['inputPull'] == 'inputPullUp' else GPIO.PUD_DOWN)
-            if rpi_input['eventType'] == 'gpio' and self.toInt(rpi_input['gpioPin']) != 0:
-                edge =  GPIO.RISING if rpi_input['edge'] == 'hise' else  GPIO.FALLING
-                GPIO.add_event_detect(self.toInt(rpi_input['gpioPin']), edge, callback= self.handleGPIOControl, bouncetime=200)
-            if rpi_input['eventType'] == 'printer' and rpi_input['printerAction'] != 'filament' and self.toInt(rpi_input['gpioPin']) != 0:
-                edge =  GPIO.RISING if rpi_input['edge'] == 'hise' else  GPIO.FALLING
-                GPIO.add_event_detect(self.toInt(rpi_input['gpioPin']), edge, callback= self.handlePrinterAction, bouncetime=200)
+        try:
+            for control in self.temperature_control:
+                 GPIO.setup(self.toInt(control['gpioPin']), GPIO.OUT, initial=GPIO.HIGH if control['activeLow'] else GPIO.LOW)
+            for rpi_output in self.rpi_outputs:
+                GPIO.setup(self.toInt(rpi_output['gpioPin']), GPIO.OUT, initial=GPIO.HIGH if rpi_output['activeLow'] else GPIO.LOW)
+            for rpi_input in self.rpi_inputs:
+                GPIO.setup(self.toInt(rpi_input['gpioPin']), GPIO.IN, pull_up_down=GPIO.PUD_UP if rpi_input['inputPull'] == 'inputPullUp' else GPIO.PUD_DOWN)
+                if rpi_input['eventType'] == 'gpio' and self.toInt(rpi_input['gpioPin']) != 0:
+                    edge =  GPIO.RISING if rpi_input['edge'] == 'hise' else  GPIO.FALLING
+                    GPIO.add_event_detect(self.toInt(rpi_input['gpioPin']), edge, callback= self.handleGPIOControl, bouncetime=200)
+                if rpi_input['eventType'] == 'printer' and rpi_input['printerAction'] != 'filament' and self.toInt(rpi_input['gpioPin']) != 0:
+                    edge =  GPIO.RISING if rpi_input['edge'] == 'hise' else  GPIO.FALLING
+                    GPIO.add_event_detect(self.toInt(rpi_input['gpioPin']), edge, callback= self.handlePrinterAction, bouncetime=200)
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            self._logger.warn(message)
+            pass
 
     def handleFilammentDetection(self,channel):
-        for rpi_input in self.rpi_inputs:
-            if channel == self.toInt(rpi_input['gpioPin']) and rpi_input['eventType'] == 'printer' and rpi_input['printerAction'] == 'filament' \
-            and ((rpi_input['edge']=='fall') ^ GPIO.input(self.toInt(rpi_input['gpioPin']))):
-                if time.time() - self.lastFilamentEndDetected >  self._settings.get(["filamentSensorTimeout"]):
-                    self._logger.info("Detected end of filament.")
-                    self.lastFilamentEndDetected = time.time()
-                    for line in self._settings.get(["filamentSensorGcode"]).split(';'):
-                        if line:
-                            self._printer.commands(line.strip().capitalize())
-                            self._logger.info("Sending GCODE command: %s",line.strip().capitalize())
-                else:
-                    self._logger.info("Prevented end of filament detection, filament sensor timeout not elapsed.")
+        try:
+            for rpi_input in self.rpi_inputs:
+                if channel == self.toInt(rpi_input['gpioPin']) and rpi_input['eventType'] == 'printer' and rpi_input['printerAction'] == 'filament' \
+                and ((rpi_input['edge']=='fall') ^ GPIO.input(self.toInt(rpi_input['gpioPin']))):
+                    if time.time() - self.lastFilamentEndDetected >  self._settings.get(["filamentSensorTimeout"]):
+                        self._logger.info("Detected end of filament.")
+                        self.lastFilamentEndDetected = time.time()
+                        for line in self._settings.get(["filamentSensorGcode"]).split(';'):
+                            if line:
+                                self._printer.commands(line.strip().capitalize())
+                                self._logger.info("Sending GCODE command: %s",line.strip().capitalize())
+                    else:
+                        self._logger.info("Prevented end of filament detection, filament sensor timeout not elapsed.")
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            self._logger.warn(message)
+            pass
 
     def startFilamentDetection(self):
-        for rpi_input in self.rpi_inputs:
-            if rpi_input['eventType'] == 'printer' and rpi_input['printerAction'] == 'filament' and self.toInt(rpi_input['gpioPin']) != 0:
-                edge =  GPIO.RISING if rpi_input['edge'] == 'hise' else GPIO.FALLING
-                if GPIO.input(self.toInt(rpi_input['gpioPin'])) == (edge == GPIO.RISING):
-                    self._printer.pause_print()
-                    self._logger.info("Started printing with no filament.")
-                else:
-                    GPIO.add_event_detect(self.toInt(rpi_input['gpioPin']), edge, callback= self.handleFilammentDetection, bouncetime=200)
+        try:
+            for rpi_input in self.rpi_inputs:
+                if rpi_input['eventType'] == 'printer' and rpi_input['printerAction'] == 'filament' and self.toInt(rpi_input['gpioPin']) != 0:
+                    edge =  GPIO.RISING if rpi_input['edge'] == 'hise' else GPIO.FALLING
+                    if GPIO.input(self.toInt(rpi_input['gpioPin'])) == (edge == GPIO.RISING):
+                        self._printer.pause_print()
+                        self._logger.info("Started printing with no filament.")
+                    else:
+                        GPIO.add_event_detect(self.toInt(rpi_input['gpioPin']), edge, callback= self.handleFilammentDetection, bouncetime=200)
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            self._logger.warn(message)
+            pass
 
     def stopFilamentDetection(self):
-        for rpi_input in self.rpi_inputs:
-            if rpi_input['eventType'] == 'printer' and rpi_input['printerAction'] == 'filament':
-                GPIO.remove_event_detect(self.toInt(rpi_input['gpioPin']))
+        try:
+            for rpi_input in self.rpi_inputs:
+                if rpi_input['eventType'] == 'printer' and rpi_input['printerAction'] == 'filament':
+                    GPIO.remove_event_detect(self.toInt(rpi_input['gpioPin']))
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            self._logger.warn(message)
+            pass
 
     def handleGPIOControl(self,channel):
-        for rpi_input in self.rpi_inputs:
-            if channel == self.toInt(rpi_input['gpioPin']) and rpi_input['eventType']=='gpio' and \
-            ((rpi_input['edge']=='fall') ^ GPIO.input(self.toInt(rpi_input['gpioPin']))):
-                for rpi_output in self.rpi_outputs:
-                    if self.toInt(rpi_input['controlledIO']) == self.toInt(rpi_output['gpioPin']):
-                        val = GPIO.LOW if rpi_input['setControlledIO']=='low' else GPIO.HIGH
-                        self.writeGPIO(self.toInt(rpi_output['gpioPin']),val)
+        try:
+            for rpi_input in self.rpi_inputs:
+                if channel == self.toInt(rpi_input['gpioPin']) and rpi_input['eventType']=='gpio' and \
+                ((rpi_input['edge']=='fall') ^ GPIO.input(self.toInt(rpi_input['gpioPin']))):
+                    for rpi_output in self.rpi_outputs:
+                        if self.toInt(rpi_input['controlledIO']) == self.toInt(rpi_output['gpioPin']):
+                            val = GPIO.LOW if rpi_input['setControlledIO']=='low' else GPIO.HIGH
+                            self.writeGPIO(self.toInt(rpi_output['gpioPin']),val)
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            self._logger.warn(message)
+            pass
 
     def handlePrinterAction(self,channel):
-        for rpi_input in self.rpi_inputs:
-            if channel == self.toInt(rpi_input['gpioPin']) and rpi_input['eventType']=='printer' and \
-            ((rpi_input['edge']=='fall') ^ GPIO.input(self.toInt(rpi_input['gpioPin']))):
-                if rpi_input['printerAction'] == 'resume':
-                    self._logger.info("Printer action resume.")
-                    self._printer.resume_print()
-                elif rpi_input['printerAction'] == 'pause':
-                    self._logger.info("Printer action pause.")
-                    self._printer.pause_print()
+        try:
+            for rpi_input in self.rpi_inputs:
+                if channel == self.toInt(rpi_input['gpioPin']) and rpi_input['eventType']=='printer' and \
+                ((rpi_input['edge']=='fall') ^ GPIO.input(self.toInt(rpi_input['gpioPin']))):
+                    if rpi_input['printerAction'] == 'resume':
+                        self._logger.info("Printer action resume.")
+                        self._printer.resume_print()
+                    elif rpi_input['printerAction'] == 'pause':
+                        self._logger.info("Printer action pause.")
+                        self._printer.pause_print()
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            self._logger.warn(message)
+            pass
 
     def writeGPIO(self,gpio,value):
         try:
@@ -286,8 +335,10 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
             if self._settings.get(["debug"]) == True:
                 self._logger.info("Writing on gpio: %s value %s", gpio,value)
             self.updateOutputUI()
-        except:
-            self._logger.info("Error while writing on GPIO %s", gpio)
+        except Exception as ex:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            self._logger.warn(message)
             pass
 
     def updateOutputUI(self):
