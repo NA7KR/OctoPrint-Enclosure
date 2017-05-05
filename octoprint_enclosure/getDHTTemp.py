@@ -1,6 +1,10 @@
+#------------------------------------------------------------------------------------------------------------------------
+# * getDHTTemp for OctoPrint_Enclosure
+# * Author: Kevin Roberts Fork from Vitor Henrique
+# * License: AGPLv3
+#------------------------------------------------------------------------------------------------------------------------
 import sys
 import Adafruit_DHT
-
 
 # Parse command line parameters.
 sensor_args = { '11': Adafruit_DHT.DHT11,
@@ -11,8 +15,6 @@ if len(sys.argv) == 3 and sys.argv[1] in sensor_args:
     pin = sys.argv[2]
 else:
     sys.exit(1)
-
-
 humidity, temperature = Adafruit_DHT.read_retry(sensor, pin,2,0.5)
 
 if humidity is not None and temperature is not None:

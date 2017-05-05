@@ -1,36 +1,39 @@
+/*------------------------------------------------------------------------------------------------------------------------
+ * enclosure.js for OctoPrint_Enclosure
+ * Author: Kevin Roberts Fork from Vitor Henrique
+ * License: AGPLv3
+-----------------------------------------------------------------------------------------------------------------------*/
 $(function() {
     function EnclosureViewModel(parameters) {
         var self = this;
-
         self.global_settings = parameters[0];
         self.connection = parameters[1];
         self.printerStateViewModel = parameters[2];
-
         self.temperature_reading = ko.observableArray();
         self.temperature_control = ko.observableArray();
         self.rpi_outputs = ko.observableArray();
         self.rpi_inputs = ko.observableArray();
         self.filamentSensorGcode = ko.observable();
-
         self.enclosureTemp = ko.observable();
         self.enclosureSetTemperature = ko.observable();
         self.enclosureHumidity = ko.observable();
-
-
         self.previousGpioStatus;
-
+        self.eventEmail = ko.observable();
+        self.email_reading = ko.observableArray();
+        self.email_password = ko.observableArray();
+        /**********************************************
+        onDataUpdaterPluginMessage
+        ***********************************************/
         self.onDataUpdaterPluginMessage = function(plugin, data) {
              if (plugin != "enclosure") {
                 return;
             }
-
             if (data.hasOwnProperty("enclosuretemp")) {
                 self.enclosureTemp(data.enclosuretemp);
             }
             if (data.hasOwnProperty("enclosureHumidity")) {
                 self.enclosureHumidity(data.enclosureHumidity);
             }
-
             if (data.hasOwnProperty("enclosureSetTemp")){
                 if (parseFloat(data.enclosureSetTemp)>0.0){
                   $("#enclosureSetTemp").attr("placeholder", data.enclosureSetTemp);
@@ -38,11 +41,9 @@ $(function() {
                   $("#enclosureSetTemp").attr("placeholder", "off");
                 }
             }
-
             if(!data.rpi_output){
               data.rpi_output = self.previousGpioStatus;
             }
-
             if(data.rpi_output){
               data.rpi_output.forEach(function(gpio) {
                   key = Object.keys(gpio)[0];
@@ -56,38 +57,50 @@ $(function() {
               });
               self.previousGpioStatus = data.rpi_output;
             }
-
             if (data.isMsg) {
                 new PNotify({title:"Enclosure", text:data.msg, type: "error"});
             }
         };
-
+        /**********************************************
+        enableBtn
+        ***********************************************/
         self.enableBtn = ko.computed(function() {
-            // return self.connection.loginState.isUser() && self.printerStateViewModel.isOperational();
             return self.connection.loginState.isUser();
         });
-
+        /**********************************************
+        onBeforeBinding
+        ***********************************************/
         self.onBeforeBinding = function () {
             self.settings = self.global_settings.settings.plugins.enclosure;
             self.temperature_reading(self.settings.temperature_reading());
-            // self.temperature_control(self.settings.temperature_control.slice(0));
             self.rpi_outputs(self.settings.rpi_outputs());
             self.rpi_inputs(self.settings.rpi_inputs());
             self.filamentSensorGcode(self.settings.filamentSensorGcode());
+            self.email_reading(self.settings.email_reading());
+            self.email_password(self.settings.email_password());
         };
-
+        /**********************************************
+        onStartupComplete
+        ***********************************************/
         self.onStartupComplete = function () {
           self.getUpdateBtnStatus();
         };
-
+        /**********************************************
+        onSettingsShown
+        ***********************************************/
         self.onSettingsShown = function(){
           self.fixUI();
+          self.emailUI();
         };
-
+        /**********************************************
+        onSettingsHidden
+        ***********************************************/
         self.onSettingsHidden = function(){
           self.getUpdateBtnStatus();
         };
-
+        /**********************************************
+        setTemperature
+        ***********************************************/
         self.setTemperature = function(){
             if(self.isNumeric($("#enclosureSetTemp").val())){
                 $.ajax({
@@ -104,29 +117,39 @@ $(function() {
                 alert("Temperature is not a number");
             }
         };
-
+        /**********************************************
+        addRpiOutput
+        ***********************************************/
         self.addRpiOutput = function(){
           self.global_settings.settings.plugins.enclosure.rpi_outputs.push({label: ko.observable("Ouput "+
             (self.global_settings.settings.plugins.enclosure.rpi_outputs().length+1)) ,
             gpioPin: 0,activeLow: true,
             autoStartup:ko.observable(false), startupTimeDelay:0, autoShutdown:ko.observable(false),shutdownTimeDelay:0});
         };
-
+        /**********************************************
+        removeRpiOutput
+        ***********************************************/
         self.removeRpiOutput = function(definition) {
           self.global_settings.settings.plugins.enclosure.rpi_outputs.remove(definition);
         };
-
+        /**********************************************
+        addRpiInput
+        ***********************************************/
         self.addRpiInput = function(){
           self.global_settings.settings.plugins.enclosure.rpi_inputs.push({label:ko.observable( "Input "+
           (self.global_settings.settings.plugins.enclosure.rpi_inputs().length+1)), gpioPin: 0,inputPull: "inputPullUp",
           eventType:ko.observable("temperature"),setTemp:100,controlledIO:ko.observable(""),setControlledIO:"low",
           edge:"fall",printerAction:"filament"});
         };
-
+        /**********************************************
+        removeRpiInput
+        ***********************************************/
         self.removeRpiInput = function(definition) {
           self.global_settings.settings.plugins.enclosure.rpi_inputs.remove(definition);
         };
-
+        /**********************************************
+        turnOffHeater
+        ***********************************************/
         self.turnOffHeater = function(){
             $.ajax({
                 url: "/plugin/enclosure/setEnclosureTemperature",
@@ -139,7 +162,9 @@ $(function() {
                 }
             });
         };
-
+        /**********************************************
+        clearGPIOMode
+        ***********************************************/
         self.clearGPIOMode = function(){
             $.ajax({
                 url: "/plugin/enclosure/clearGPIOMode",
@@ -150,14 +175,18 @@ $(function() {
                 }
             });
         };
-
+        /**********************************************
+        getUpdateBtnStatus
+        ***********************************************/
         self.getUpdateBtnStatus = function(){
             $.ajax({
                 url: "/plugin/enclosure/getUpdateBtnStatus",
                 type: "GET"
             });
         };
-
+        /**********************************************
+        requestEnclosureTemperature
+        ***********************************************/
         self.requestEnclosureTemperature = function(){
             return $.ajax({
                     type: "GET",
@@ -165,7 +194,9 @@ $(function() {
                     async: false
                 }).responseText;
         };
-
+        /**********************************************
+        equestEnclosureSetTemperature
+        ***********************************************/
         self.requestEnclosureSetTemperature = function(){
             return $.ajax({
                     type: "GET",
@@ -173,14 +204,18 @@ $(function() {
                     async: false
                 }).responseText;
         };
-
+        /**********************************************
+        getStatusHeater
+        ***********************************************/
         self.getStatusHeater = function(setTemp,currentTemp){
             if (parseFloat(setTemp)>0.0){
                 return cleanTemperature(setTemp);
             }
             return "off";
         };
-
+        /**********************************************
+        handleIO
+        ***********************************************/
         self.handleIO = function(data, event){
             $.ajax({
                     type: "GET",
@@ -190,83 +225,71 @@ $(function() {
                     async: false
             });
         };
-
+        /**********************************************
+        fixUI
+        ***********************************************/
         self.fixUI = function(){
           if($('#enableTemperatureReading').is(':checked')){
             $('#enableHeater').prop('disabled', false);
             $('#temperature_reading_content').show("blind");
-            // $('#temperature_control_content').show("blind");
           }else{
             $('#enableHeater').prop('disabled', true);
             $('#enableHeater').prop('checked', false);
             $('#temperature_reading_content').hide("blind");
-            // $('#temperature_control_content').hide("blind");
           }
-
           if($('#enableHeater').is(':checked')){
             $('#temperature_control_content').show("blind");
           }else{
             $('#temperature_control_content').hide("blind");
           }
-
         };
-
-        // self.fixEventTypeUI = function(){
-        //   $('[name^="eventType_"]').each(function() {
-        //     if($( this ).is(':checked')){
-        //       selectedType = $( this ).val();
-        //       idNumber = $( this ).attr('name').replace("eventType_", "");
-        //       self.eventTypeUI(idNumber,selectedType);
-        //     }
-        //   });
-        // };
-        //
-        // self.eventTypeUI = function(idNumber,selectedType){
-        //
-        //   $('#input_io_'+idNumber).hide();
-        //   $('#temp_controlled_'+idNumber).hide();
-        //   $('#filament_controlled_'+idNumber).hide();
-        //   $('#gpio_controlled_'+idNumber).hide();
-        //
-        //   if(selectedType=='temperature'){
-        //     $('#temp_controlled_'+idNumber).show();
-        //     console.log("temperature");
-        //   }else if(selectedType=='filament'){
-        //     $('#filament_controlled_'+idNumber).show();
-        //     $('#input_io_'+idNumber).show();
-        //     console.log("filament");
-        //   }else if(selectedType=='gpio'){
-        //     $('#gpio_controlled_'+idNumber).show();
-        //     $('#input_io_'+idNumber).show();
-        //     console.log("gpio");
-        //   }
-        // };
-
-        //
-        // self.fixAutoStartupUI = function(idNumber){
-        //   if($('#autoStartup_'+idNumber).is(':checked')){
-        //     $('#autoStartupField_'+idNumber).show("blind");
-        //   }else{
-        //     $('#autoStartupField_'+idNumber).hide("blind");
-        //   }
-        // };
-        //
-        // self.fixAutoShutdownUI = function(idNumber){
-        //   if($('#autoShutdown_'+idNumber).is(':checked')){
-        //     $('#autoShutdownField_'+idNumber).show("blind");
-        //   }else{
-        //     $('#autoShutdownField_'+idNumber).hide("blind");
-        //   }
-        // };
-
+        
+        /**********************************************
+        emailUI
+        ***********************************************/
+        self.emailUI = function(){
+          if($('#enableemail').is(':checked')){
+             $('#isEmailEnabled').show("blind");
+          }else{
+            $('#isEmailEnabled').hide("blind");
+          }
+        };
+        /**********************************************
+        emailsslUI
+        ***********************************************/
+        self.emailsslUI = function(){
+          if($('#emailSSL').is(':checked')){
+             $('#isSSLEmailEnabled').show("blind");
+          }else{
+            $('#isSSLEmailEnabled').hide("blind");
+          }
+        };
+        /**********************************************
+        eventEmail
+        ***********************************************/
+        self.eventEmail = function(data,event) {
+            $.ajax({
+                type: "GET",
+                url: "/plugin/enclosure/getEnclosureEmail",
+                async: false
+            });
+        }
+        /**********************************************
+        isNumeric
+        ***********************************************/
         self.isNumeric = function(n){
           return !isNaN(parseFloat(n)) && isFinite(n);
         };
     }
-
+    /**********************************************
+    EnclosureViewModel
+    ***********************************************/
     OCTOPRINT_VIEWMODELS.push([
         EnclosureViewModel,
         ["settingsViewModel","connectionViewModel","printerStateViewModel"],
         ["#tab_plugin_enclosure","#settings_plugin_enclosure"]
     ]);
 });
+/**********************************************
+End
+=***********************************************/
