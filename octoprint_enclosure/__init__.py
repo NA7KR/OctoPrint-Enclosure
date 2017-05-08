@@ -38,7 +38,6 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
     temperature_reading = []
     temperature_control = []
     email_reading = []
-    email_password = []
     rpi_outputs = []
     rpi_inputs = []
     previous_rpi_outputs = []
@@ -480,6 +479,12 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
     # on_settings_save   SettingsPlugin mixin
     #------------------------------------------------------------------------------------------------------------------------
     def on_settings_save(self, data):
+        
+        if self._settings.get(["email_password"]):
+            password = self._settings.get(["email_password"])
+            password2 = self.encrypt_decrypt(password)
+            self._logger.info("PASSWORD : %s", password2)
+            
         outputsBeforeSave = self.getOutputList()
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
         self.temperature_reading = self._settings.get(["temperature_reading"])
@@ -487,7 +492,6 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
         self.rpi_outputs = self._settings.get(["rpi_outputs"])
         self.rpi_inputs = self._settings.get(["rpi_inputs"])
         self.email_reading = self._settings.get(["email_reading"]) 
-        self.email_password = self._settings.get(["email_password"]) #self.encrypt_decrypt(
         outputsAfterSave = self.getOutputList()
         commonPins = list(set(outputsBeforeSave) & set(outputsAfterSave))
         for pin in (pin for pin in outputsBeforeSave if pin not in commonPins):
@@ -500,7 +504,6 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
             self._logger.info("rpi_outputs: %s", self.rpi_outputs)
             self._logger.info("rpi_inputs: %s", self.rpi_inputs)
             self._logger.info("email_reading: %s", self.email_reading)
-            self._logger.info("email_password: %s", self.email_password)
             self._logger.info("plugin.SettingsPlugin.on_settings_save: %s", octoprint.plugin.SettingsPlugin.on_settings_save(self, data))
         self.startGPIO()
         self.configureGPIO()
@@ -530,7 +533,7 @@ class EnclosurePlugin(octoprint.plugin.StartupPlugin,
             useBoardPinNumber=False,
             filamentSensorTimeout=120,
             email_reading = [{ 'emailFrom': '', 'emailTo': '', 'emailCC': '', 'emailServer': '', 'emailUser': '', 'emailPort': 25,'isEnabled': True, 'isSSLEnabled': False, 'emailFromName': '3d Printer Alert', 'include_snapshot': True}],
-            email_password = [{ 'emailPassword': '' }],
+            email_password = "",
             email_salt = uuid.uuid4().hex,
             message_format=dict(
                 title="Print job complete",
